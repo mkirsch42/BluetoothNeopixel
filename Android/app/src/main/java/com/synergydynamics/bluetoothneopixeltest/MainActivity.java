@@ -11,10 +11,13 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.flask.colorpicker.ColorPickerView;
+import com.github.danielnilsson9.colorpickerview.view.ColorPanelView;
+import com.github.danielnilsson9.colorpickerview.view.ColorPickerView;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.UUID;
 
 public class MainActivity extends Activity {
@@ -22,18 +25,20 @@ public class MainActivity extends Activity {
     private static final int REQUEST_BLUETOOTH = 243;
 
     private OutputStream out;
+    private InputStream in;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         BluetoothAdapter bta = BluetoothAdapter.getDefaultAdapter();
-        BluetoothDevice btd = bta.getBondedDevices().stream().filter(d->d.getName().startsWith("RNBT")).findFirst().get();
+        BluetoothDevice btd = bta.getBondedDevices().stream().filter(d->d.getName().startsWith("ras")).findFirst().get();
         try {
             BluetoothSocket bts = btd.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
             bts.connect();
             Log.d("CONNECTED", "CONNECTED");
             out = bts.getOutputStream();
+            in = bts.getInputStream();
 //            ColorPickerDialog cpd = ColorPickerDialog.newBuilder().setColor(0).create();
 //            cpd.show(getFragmentManager(), "CPD");
 //            cpd.setColorPickerDialogListener(new ColorPickerDialogListener() {
@@ -58,9 +63,12 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
 
-        ColorPickerView cpv = (ColorPickerView)findViewById(R.id.color_picker_view);
-        cpv.addOnColorChangedListener(c->{try{
-            out.write(new byte[]{'*', (byte) 0b10000011, 0, (byte) Color.red(c), (byte) Color.green(c), (byte) Color.blue(c), 0, 0});
+        ColorPickerView cpv = (ColorPickerView)findViewById(R.id.color_picker);
+
+        cpv.setOnColorChangedListener(c->{try{
+            out.write(new byte[]{'*', (byte) 0b10000011, 0, (byte) Color.red(c), (byte) Color.green(c), (byte) Color.blue(c), 0, 4});
+            byte[] buffer = new byte[7];
+            //while(in.read()!=6);
         } catch(IOException e) {
             e.printStackTrace();
         }});
