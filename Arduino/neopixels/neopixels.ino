@@ -1,9 +1,10 @@
 #include <Adafruit_NeoPixel.h>
 
 #define NEOPIXEL_PIN 2
-#define NEOPIXEL_COUNT 24
+#define NEOPIXEL_COUNT 40
 
 #define START_CMD 42
+#define END_CMD 4
 
 #define OP_MASK  0b01111111
 #define OP_COLOR 0b00000001
@@ -14,7 +15,7 @@
 #define MODE_BT 0
 #define MODE_LISTEN 1
 
-byte currentMode = MODE_LISTEN;
+byte currentMode = MODE_BT;
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NEOPIXEL_COUNT, NEOPIXEL_PIN);
 
 void setup() {
@@ -24,10 +25,14 @@ void setup() {
   pixels.show();
 }
 
+
 void loop() {
   if(Serial.read() == START_CMD) {
     byte in[7];
     Serial.readBytes(in, 7);
+    if(in[6] != END_CMD) {
+      return;
+    }
     byte op = in[0] & OP_MASK;
     switch(op) {
       case OP_COLOR:
@@ -41,10 +46,23 @@ void loop() {
         break;
     }
     if(in[0] & OP_APPLY) {
-      pixels.show();
+      apply();
     }
+    //Serial.write(6);
   }
-  if(currentMode == MODE_LISTEN) listenMode();
+  //if(currentMode == MODE_LISTEN) listenMode();
+}
+
+unsigned long lastUpdate = 0;
+#define REFRESH_PERIOD 16667
+void apply() {
+  unsigned long now = micros();
+  unsigned long since = now - lastUpdate;
+  if(since < REFRESH_PERIOD) {
+    delayMicroseconds(REFRESH_PERIOD - since);
+  }
+  pixels.show();
+  lastUpdate = micros();
 }
 
 void range(byte s, byte e, byte r, byte g, byte b) {
@@ -53,7 +71,7 @@ void range(byte s, byte e, byte r, byte g, byte b) {
   }
 }
 
-
+/*
 int peak = 0;
 long peakTime = 0;
 byte[] listenColor = {255, 255, 255};
@@ -64,4 +82,4 @@ void listenMode() {
   range(0, pixels, listenColor[0], listenColor[1], listenColor[2]);
   pixels.show();
 }
-
+*/
